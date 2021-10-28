@@ -39,5 +39,5 @@ jobs:
           parameters:
             ./arm-templates/storageaccount.parameters.json
             storageAccountName=pntestx20211028a
-            location="uswest"
+            location="westus3"
           deploymentMode: incremental
