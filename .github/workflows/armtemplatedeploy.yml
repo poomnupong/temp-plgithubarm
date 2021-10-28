@@ -31,6 +31,7 @@ jobs:
 
       - name: Deploy storage account
         uses: Azure/arm-deploy@v1
+        id: storageAccountDeploy
         with:
           scope: resourcegroup
           resourceGroupName: temp-githubactions-rg
@@ -38,6 +39,8 @@ jobs:
           template: ./arm-templates/storageaccount.json
           parameters:
             ./arm-templates/storageaccount.parameters.json
-            storageAccountName=pntestx20211028a
-            location="westus3"
+            storageAccountName=pntestx20211028b
+            location="westus2"
           deploymentMode: complete
+
+      - run: echo ${{ steps.storageAccountDeploy.outputs.BlobUri }}
