@@ -3,13 +3,13 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "storageAccountName": {
-            "value": "pnexcif20211028" // TODO: Fill in parameter value
+            "value": "pnexcif20211028"
         },
         "location": {
-            "value": "southcentralus" // TODO: Fill in parameter value
+            "value": "southcentralus"
         },
         "sku": {
-            "value": "Standard_LRSs" // TODO: Fill in parameter value
+            "value": "Standard_LRS"
         }
     }
 }
