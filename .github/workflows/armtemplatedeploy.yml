@@ -30,10 +30,10 @@ jobs:
         with:
           scope: subscription
           subscriptionId: ${{ env.subscriptionId }}
-          region: "southcentralus"
+          region: "${{ env.location }}"
           template: ./arm-templates/resourcegroup.json
           parameters:
-            location=${{ env.location }}
+            location="${{ env.location }}"
             resourceGroupName=${{ env.resource_group_name }}
           deploymentName: ${{ env.resource_group_name }}
 
@@ -47,8 +47,8 @@ jobs:
           template: ./arm-templates/storageaccount.json
           parameters:
             ./arm-templates/storageaccount.parameters.json
-            storageAccountName=pntestx20211028b
-            location=${{ env.location }}
+            storageAccountName=pntestx20211028c
+            location="${{ env.location }}"
           deploymentMode: complete
 
       - name: Deploy virtual machine
@@ -60,7 +60,7 @@ jobs:
           template: ./arm-templates/virtualmachine.json
           parameters:
             adminPassword=${{ secrets.UBUNTU_ADMIN_PASSWORD }}
-            location=$${{ env.location }}
+            location="${{ env.location }}"
           deploymentMode: complete
 
       - run: echo ${{ steps.storageAccountDeploy.outputs.BlobUri }}
