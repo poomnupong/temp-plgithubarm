@@ -9,13 +9,17 @@ on:
   workflow_dispatch:
 
 env:
-  resource_group_name: "temp-githubactions-rg"
-  location: "South Central US"
   subscriptionId: "f7741b3d-d2ac-4be0-8083-e8dc60675c97"
 
 jobs:
-  armDeploy:
+  armDeployStaging:
+    name: Deploy to staging
     runs-on: ubuntu-latest
+    env:
+      resource_group_name: "temp-stg-githubactions-rg"
+      location: "West US 2"
+    environment:
+      name: staging
 
     steps:
       - uses: actions/checkout@v2
@@ -47,7 +51,66 @@ jobs:
           template: ./arm-templates/storageaccount.json
           parameters:
             ./arm-templates/storageaccount.parameters.json
-            storageAccountName=pntestx20211028c
+            storageAccountName=pntestx20211028a
+            location="${{ env.location }}"
+          deploymentMode: complete
+
+      - name: Deploy virtual machine
+        uses: Azure/arm-deploy@v1
+        with:
+          scope: resourcegroup
+          resourceGroupName: ${{ env.resource_group_name }}
+          subscriptionId: ${{ env.subscriptionId }}
+          template: ./arm-templates/virtualmachine.json
+          parameters:
+            adminPassword=${{ secrets.UBUNTU_ADMIN_PASSWORD }}
+            location="${{ env.location }}"
+          deploymentMode: complete
+
+      - run: echo ${{ steps.storageAccountDeploy.outputs.BlobUri }}
+
+  armDeployProduction:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    env:
+      resource_group_name: "temp-prod-githubactions-rg"
+      location: "East US 2"
+    environment:
+      name: production
+
+    needs: armDeployStaging
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: Azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy resource group ${{ env.resource_group_name }}
+        uses: Azure/arm-deploy@v1
+        with:
+          scope: subscription
+          subscriptionId: ${{ env.subscriptionId }}
+          region: "${{ env.location }}"
+          template: ./arm-templates/resourcegroup.json
+          parameters:
+            location="${{ env.location }}"
+            resourceGroupName=${{ env.resource_group_name }}
+          deploymentName: ${{ env.resource_group_name }}
+
+      - name: Deploy storage account
+        uses: Azure/arm-deploy@v1
+        id: storageAccountDeploy
+        with:
+          scope: resourcegroup
+          resourceGroupName: ${{ env.resource_group_name }}
+          subscriptionId: ${{ env.subscriptionId }}
+          template: ./arm-templates/storageaccount.json
+          parameters:
+            ./arm-templates/storageaccount.parameters.json
+            storageAccountName=pntestx20211028b
             location="${{ env.location }}"
           deploymentMode: complete
 
