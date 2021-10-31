@@ -8,6 +8,11 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  resource_group_name: "temp-githubactions-rg"
+  location: "South Central US"
+  subscriptionId: "f7741b3d-d2ac-4be0-8083-e8dc60675c97"
+
 jobs:
   armDeploy:
     runs-on: ubuntu-latest
@@ -20,38 +25,42 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy Azure Resource Manager (ARM) Template
+      - name: Deploy resource group ${{ env.resource_group_name }}
         uses: Azure/arm-deploy@v1
         with:
           scope: subscription
-          subscriptionId: "f7741b3d-d2ac-4be0-8083-e8dc60675c97"
+          subscriptionId: ${{ env.subscriptionId }}
           region: "southcentralus"
           template: ./arm-templates/resourcegroup.json
-          deploymentName: rg-githubactions
+          parameters:
+            location=${{ env.location }}
+            resourceGroupName=${{ env.resource_group_name }}
+          deploymentName: ${{ env.resource_group_name }}
 
       - name: Deploy storage account
         uses: Azure/arm-deploy@v1
         id: storageAccountDeploy
         with:
           scope: resourcegroup
-          resourceGroupName: temp-githubactions-rg
-          subscriptionId: "f7741b3d-d2ac-4be0-8083-e8dc60675c97"
+          resourceGroupName: ${{ env.resource_group_name }}
+          subscriptionId: ${{ env.subscriptionId }}
           template: ./arm-templates/storageaccount.json
           parameters:
             ./arm-templates/storageaccount.parameters.json
             storageAccountName=pntestx20211028b
-            location="westus2"
+            location=${{ env.location }}
           deploymentMode: complete
 
       - name: Deploy virtual machine
         uses: Azure/arm-deploy@v1
         with:
           scope: resourcegroup
-          resourceGroupName: temp-githubactions-rg
-          subscriptionId: "f7741b3d-d2ac-4be0-8083-e8dc60675c97"
+          resourceGroupName: ${{ env.resource_group_name }}
+          subscriptionId: ${{ env.subscriptionId }}
           template: ./arm-templates/virtualmachine.json
           parameters:
-            adminPassword=$${{ secrets.UBUNTU_ADMIN_PASSWORD }}
+            adminPassword=${{ secrets.UBUNTU_ADMIN_PASSWORD }}
+            location=$${{ env.location }}
           deploymentMode: complete
 
       - run: echo ${{ steps.storageAccountDeploy.outputs.BlobUri }}
