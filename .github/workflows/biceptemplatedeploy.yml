@@ -1,0 +1,88 @@
+name: "Bicep deploy workflow"
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  subscriptionId: "f7741b3d-d2ac-4be0-8083-e8dc60675c97"
+
+jobs:
+  bicepAzCliDeploy:
+    name: Bicep AZ CLI deploy job
+    runs-on: ubuntu-latest
+
+    env:
+      resource_group_name: rg-bicep-azcli-githubactions
+      location: West US 2
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: Azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy resource group
+        uses: Azure/cli@1.0.4
+        with:
+          inlinescript: |
+            az deployment sub create \
+            --name ${{ env.resource_group_name }} \
+            --location "${{ env.location }}" \
+            --template-file ./bicep-templates/resourcegroup.bicep \
+            --parameters \
+            resourceGroupName=${{ env.resource_group_name }} \
+            location="${{ env.location }}"
+
+      - name: Deploy virtual network
+        uses: Azure/cli@1.0.4
+        with:
+          inlinescript: |
+            az deployment group create \
+            --resource-group ${{ env.resource_group_name }} \
+            --template-file ./bicep-templates/virtualnetwork.bicep \
+            --parameters \
+            vNetPrefix=bicepazcli \
+            location="${{ env.location }}"
+        
+
+  bicepArmDeployAction:
+    name: BIcep arm-deploy deploy job
+    runs-on: ubuntu-latest
+    env:
+      resource_group_name: rg-bicep-armdeploy-githubactions
+      location: East US 2
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: Azure/login@v1
+        with: 
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy resource group
+        uses: Azure/arm-deploy@v1
+        with:
+          scope: subscription
+          region: ${{ env.location }}
+          subscriptionId: ${{ env.subscriptionId }}
+          deploymentName: ${{ env.resource_group_name }}
+          template: ./bicep-templates/resourcegroup.bicep
+          parameters:
+            resourceGroupName=${{ env.resource_group_name }}
+            location="${{ env.location }}"
+
+      - name: Deploy vnet
+        uses: Azure/arm-deploy@v1
+        with:
+          scope: resourcegroup
+          resourceGroupName: ${{ env.resource_group_name }}
+          subscriptionId: ${{ env.subscriptionId }}
+          template: ./bicep-templates/virtualnetwork.bicep
+          parameters:
+            vNetPrefix=biceparmdeploy
+            location="${{ env.location }}"
